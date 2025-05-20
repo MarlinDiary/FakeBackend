@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake AI Backend Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        input,
+        textarea,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+
+        .image-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Fake AI Backend Tester</h1>
+    <div class="container">
+        <div class="card">
+            <h2>Step 1: Authentication</h2>
+            <div>
+                <label for="apiKey">API Key:</label>
+                <input type="text" id="apiKey" placeholder="Enter your API key">
+                <button id="authButton">Get Signature</button>
+            </div>
+            <div>
+                <h3>Response:</h3>
+                <pre id="authResponse">No response yet</pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Step 2: Generate Image</h2>
+            <div>
+                <label for="signature">Signature (from step 1):</label>
+                <input type="text" id="signature" placeholder="Signature will be auto-filled">
+                <label for="prompt">Prompt:</label>
+                <textarea id="prompt" rows="3" placeholder="Enter your image generation prompt"></textarea>
+                <button id="generateButton">Generate Image</button>
+            </div>
+            <div>
+                <h3>Response:</h3>
+                <pre id="generateResponse">No response yet</pre>
+                <div class="image-container">
+                    <img id="generatedImage" style="display: none;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = window.location.origin;
+
+        // Auth button click handler
+        document.getElementById('authButton').addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                alert('Please enter an API key');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${baseUrl}/auth`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': apiKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                document.getElementById('authResponse').textContent = JSON.stringify(data, null, 2);
+
+                if (data.signature) {
+                    document.getElementById('signature').value = data.signature;
+                }
+            } catch (error) {
+                document.getElementById('authResponse').textContent = `Error: ${error.message}`;
+            }
+        });
+
+        // Generate button click handler
+        document.getElementById('generateButton').addEventListener('click', async () => {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const signature = document.getElementById('signature').value.trim();
+            const prompt = document.getElementById('prompt').value.trim();
+
+            if (!apiKey || !signature || !prompt) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${baseUrl}/generate_image`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        signature,
+                        prompt
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('generateResponse').textContent = JSON.stringify(data, null, 2);
+
+                // Display the image if the response is a URL
+                const img = document.getElementById('generatedImage');
+                if (typeof data === 'string' && data.startsWith('/images/')) {
+                    img.src = data;
+                    img.style.display = 'block';
+                } else {
+                    img.style.display = 'none';
+                }
+            } catch (error) {
+                document.getElementById('generateResponse').textContent = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+
+</html>
