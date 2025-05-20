@@ -86,10 +86,17 @@ app.post('/generate_image', authenticate, (req, res) => {
     res.json(imageUrl);
 });
 
-// Helper function to generate a random signature
+// Helper function to generate a random signature (78-80 characters)
 function generateSignature() {
-    return Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15);
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const length = 78 + Math.floor(Math.random() * 3); // Random length between 78-80
+    let signature = '';
+
+    for (let i = 0; i < length; i++) {
+        signature += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+
+    return signature;
 }
 
 // Function to generate a 1-pixel image
