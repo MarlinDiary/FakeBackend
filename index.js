@@ -140,7 +140,7 @@ const authenticate = (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !validApiKeys.includes(authHeader)) {
-        return res.status(401).json({ error: 'Unauthorized: Invalid API key' });
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     req.apiKey = authHeader;
@@ -167,13 +167,13 @@ app.post('/generate_image', authenticate, (req, res) => {
 
     // Validate signature
     if (!signature || !signatures[signature]) {
-        return res.status(401).json({ error: 'Invalid signature' });
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Check if signature has expired
     if (Date.now() > signatures[signature].expires) {
         delete signatures[signature]; // Clean up expired signature
-        return res.status(401).json({ error: 'Signature expired' });
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Process the prompt and generate image URL
