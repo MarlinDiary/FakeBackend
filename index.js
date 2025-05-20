@@ -201,26 +201,33 @@ function generateSignature() {
 
 // Function to generate a 1-pixel image
 function generateOnePixelImage(prompt) {
-    // Create a simple 1-pixel PNG base64 string for different colors
-    // Simple hash of the prompt to determine color (for variety)
-    const hash = prompt.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 16777215;
-    const color = hash.toString(16).padStart(6, '0');
+    // Get a list of all image files in the images directory
+    const imageFiles = fs.readdirSync(imagesDir).filter(file =>
+        file.endsWith('.jpg') || file.endsWith('.jpeg') || file.endsWith('.png')
+    );
 
-    // Create a filename based on a sanitized version of the prompt
-    const sanitizedPrompt = prompt.replace(/[^a-z0-9]/gi, '_').substring(0, 50);
-    const filename = `${Date.now()}_${sanitizedPrompt}.png`;
-    const filepath = path.join(imagesDir, filename);
+    // Pick a random image from the directory
+    const randomImage = imageFiles[Math.floor(Math.random() * imageFiles.length)];
+    const sourceImagePath = path.join(imagesDir, randomImage);
 
-    // Create a 1x1 pixel PNG image with the color
-    // In a real app, you'd use a graphics library, but this is a mock
-    // Here we'll just write a simple file and return its URL
+    // Generate a UUID-style filename
+    const uuid = generateUUID();
+    const fileExtension = path.extname(randomImage);
+    const newFilename = `${uuid}${fileExtension}`;
+    const newFilePath = path.join(imagesDir, newFilename);
 
-    // This is a 1x1 pixel PNG template
-    const onePixelPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
-    const imageBuffer = Buffer.from(onePixelPngBase64, 'base64');
-    fs.writeFileSync(filepath, imageBuffer);
+    // Copy the image to the new filename
+    fs.copyFileSync(sourceImagePath, newFilePath);
 
-    return `/images/${filename}`;
+    return `/images/${newFilename}`;
+}
+
+// Helper function to generate a UUID-like string
+function generateUUID() {
+    const template = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+    return template.replace(/x/g, () => {
+        return Math.floor(Math.random() * 16).toString(16);
+    });
 }
 
 // Clean up expired signatures periodically
@@ -232,6 +239,49 @@ setInterval(() => {
         }
     });
 }, 30000); // Run every 30 seconds
+
+// Clean up generated images periodically
+setInterval(() => {
+    // Get all files in the images directory
+    const files = fs.readdirSync(imagesDir);
+
+    // UUID pattern (all our images follow this pattern now)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png)$/i;
+
+    // We need to keep track of the original 9 images, so we'll store their names in a file
+    const originalImagesFile = path.join(__dirname, 'original_images.json');
+    let originalImages = [];
+
+    // Try to read the original images file
+    try {
+        if (fs.existsSync(originalImagesFile)) {
+            originalImages = JSON.parse(fs.readFileSync(originalImagesFile, 'utf8'));
+        }
+    } catch (err) {
+        console.error('Error reading original images file:', err);
+    }
+
+    // Delete files matching the UUID pattern that are not in the original images list
+    files.forEach(file => {
+        if (uuidPattern.test(file) && !originalImages.includes(file)) {
+            const filePath = path.join(imagesDir, file);
+
+            // Get file creation time
+            const stats = fs.statSync(filePath);
+            const fileAge = Date.now() - stats.ctimeMs;
+
+            // Delete files older than 5 minutes
+            if (fileAge > 5 * 60 * 1000) {
+                try {
+                    fs.unlinkSync(filePath);
+                    console.log(`Deleted old generated image: ${file}`);
+                } catch (err) {
+                    console.error(`Failed to delete ${file}:`, err);
+                }
+            }
+        }
+    });
+}, 300000); // Run every 5 minutes
 
 // Start the server
 app.listen(PORT, () => {
