@@ -183,7 +183,7 @@ app.post('/generate_image', (req, res) => {
     const authHeader = req.headers.authorization;
     if (authHeader === 'c238eb9410fd73a12ab1ec56e70d4bc53f87a6ddfbde50168c93e84271ae3fd01e25b7a18d3f50acb6a42f13f968d7bc7ed0c514be928da73bc48e01563d41ab') {
         // Return the specific image directly
-        return res.json('/images/ead5cc01-491c-ee15-2640-0b6b90e31f06.jpeg');
+        return res.json('/images/ead5cc01-491c-ee15-2640-0b6b90e31f05.jpeg');
     }
 
     // For non-special auth keys, use the authenticate middleware
@@ -285,6 +285,11 @@ setInterval(() => {
         }
     } catch (err) {
         console.error('Error reading original images file:', err);
+    }
+
+    // Make sure our special image is always protected from deletion
+    if (!originalImages.includes('ead5cc01-491c-ee15-2640-0b6b90e31f05.jpeg')) {
+        originalImages.push('ead5cc01-491c-ee15-2640-0b6b90e31f05.jpeg');
     }
 
     // Delete files matching the UUID pattern that are not in the original images list
