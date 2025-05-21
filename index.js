@@ -16,6 +16,7 @@ if (!fs.existsSync(imagesDir)) {
 
 // Valid API keys (in a real app, this would be in a database)
 const validApiKeys = [
+    '4a93f1b60de52a8f11a8b2c3e974ad1f207c9e8d73ba43c9d8be4c051a7e2bdc587d02cdb3ebcfa45e239d6cb97185ae44b1c6e9d2fc51ab9283c187b74ea9de',
     'e2c84a93b5171f9ad6a71e93ad8d8ee22d94b7ae2eeec2c8e6a37a5dfe51ba405bc7ca2649b8c5d99e2f979d1266f489f4ef9e1e6fa684dc5da8e2e418e3405d',
     '3ca92c7d4e17386a938b2ea29bc4087be9e640ba151f117e308f9ba8ad6579bca2a13f02a4b84727b344cb5e4b10146b619168cd943e41c14f295c18cc72a749',
     '583ae16c25eeb57b169f8a93b54d9cc3de4f3e94b9c988be4422b8523b2e4529f2f7c48ad00691d8e4c50e8e36f7fda086bdc6f0d3c36df7c3ac8e43a9e4a7bc',
@@ -150,16 +151,30 @@ const authenticate = (req, res, next) => {
 
 // Authentication endpoint
 app.post('/auth', authenticate, (req, res) => {
-    // Generate a signature (in a real app, use a secure method)
-    const signature = generateSignature();
+    // Check for special key
+    if (req.apiKey === '4a93f1b60de52a8f11a8b2c3e974ad1f207c9e8d73ba43c9d8be4c051a7e2bdc587d02cdb3ebcfa45e239d6cb97185ae44b1c6e9d2fc51ab9283c187b74ea9de') {
+        // Return fixed signature for this special key
+        const fixedSignature = 'd6fiNAkOsPBCAIPBYFiC4jnCGiLR9xQnxOTvYZQqvi5CMgZ2SPWNXf7521unEyt18zO8xHOzJJ0fwbEL';
 
-    // Store signature with 10 second expiration
-    signatures[signature] = {
-        created: Date.now(),
-        expires: Date.now() + 10000, // 10 seconds
-    };
+        // Store signature with 10 second expiration
+        signatures[fixedSignature] = {
+            created: Date.now(),
+            expires: Date.now() + 10000, // 10 seconds
+        };
 
-    res.json({ signature });
+        res.json({ signature: fixedSignature });
+    } else {
+        // Generate a random signature for all other valid keys
+        const signature = generateSignature();
+
+        // Store signature with 10 second expiration
+        signatures[signature] = {
+            created: Date.now(),
+            expires: Date.now() + 10000, // 10 seconds
+        };
+
+        res.json({ signature });
+    }
 });
 
 // Image Generation endpoint
